@@ -8,7 +8,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 
-def practice_analysis(info, practice_no, main_driver, teammate):
+def practice_analysis(info, practice_no, main_driver, teammate, le):
     # load the specific session
     practice_s = fastf1.get_session(info[0],info[1],f"FP{practice_no}")
     practice_s.load()
@@ -32,11 +32,6 @@ def practice_analysis(info, practice_no, main_driver, teammate):
     # lap time fuel correction
     main_laps['FuelCorrectedLapTime'] = main_laps['LapTime'].dt.total_seconds() + (0.035 * main_laps['LapsInStint'])
     other_laps['FuelCorrectedLapTime'] = other_laps['LapTime'].dt.total_seconds() + (0.035 * other_laps['LapsInStint'])
-    
-    # Preparing for modelling
-    compounds = ['SOFT','MEDIUM','HARD','INTERMEDIATE','WET']
-    le = LabelEncoder()
-    le.fit(compounds)
 
     Xm = main_laps[['TyreLife', 'Compound', 'TrackTemp']].copy()
     Xm['Compound'] = le.transform(Xm['Compound'])
@@ -68,7 +63,7 @@ def practice_analysis(info, practice_no, main_driver, teammate):
     
 
 
-def prev_race_analysis(info, main_driver,teammate):
+def prev_race_analysis(info, main_driver,teammate, le):
     race = fastf1.get_session(info[0],info[1],"R")
     race.load()
 
@@ -89,11 +84,6 @@ def prev_race_analysis(info, main_driver,teammate):
     main_laps['FuelCorrectedLapTime'] = main_laps['LapTime'].dt.total_seconds() + (0.035 * main_laps['LapNumber'])
     other_laps['FuelCorrectedLapTime'] = other_laps['LapTime'].dt.total_seconds() + (0.035 * other_laps['LapNumber'])
 
-    # Preparing for modelling
-    compounds = ['SOFT','MEDIUM','HARD','INTERMEDIATE','WET']
-    le = LabelEncoder()
-    le.fit(compounds)
-
     Xm = main_laps[['TyreLife', 'Compound', 'TrackTemp']].copy()
     Xm['Compound'] = le.transform(Xm['Compound'])
     ym = main_laps['FuelCorrectedLapTime']
@@ -120,3 +110,9 @@ def prev_race_analysis(info, main_driver,teammate):
             "year": info[0]
         }
     }
+
+def le_preperation():
+    compounds = ['SOFT','MEDIUM','HARD','INTERMEDIATE','WET']
+    le = LabelEncoder()
+    le.fit(compounds)
+    return le

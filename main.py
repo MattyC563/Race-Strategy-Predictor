@@ -2,6 +2,7 @@
 from analysis import *
 from creator import *
 from formatter import *
+from calibration import *
 
 # imports for clean_data
 import fastf1
@@ -38,14 +39,21 @@ def main():
         prev_event = fastf1.get_event(year-1, gp_name)
     except ValueError:
         print("This event didn't occur in the previous year.")
+
+    # le preparation
+    le = le_preperation()
     
     # practice info gatherer
     practice_total_info = {}
     for i in range(1, no_of_practice+1):
-        practice_total_info[f"FP{i}"] = practice_analysis([year,gp_name], i, main_driver, teammate)
+        practice_total_info[f"FP{i}"] = practice_analysis([year,gp_name], i, main_driver, teammate, le)
     
     # previous race info gatherer
-    previous_race_info = prev_race_analysis([year,gp_name], prev_main_driver, prev_teammate)
+    previous_race_info = prev_race_analysis([year,gp_name], prev_main_driver, prev_teammate, le)
+
+    # calibrate last years race data to match the current car
+    calibrated_stints = calibration([year, gp_name], main_driver)
+    pace_delta = calculate_calibration(practice_total_info["FP2"],calibrated_stints,le)
 
     race_strategy_info = race_strategy_creator(practice_total_info, previous_race_info)
 
