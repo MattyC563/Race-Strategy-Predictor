@@ -1,16 +1,11 @@
+# function imports
+from analysis import *
+from creator import *
+from formatter import *
+
 # imports for clean_data
 import fastf1
 import logging
-import pandas as pd
-
-# imports for data_analysis
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, r2_score
-
-# imports for displaying data
-import matplotlib.pyplot as plt
-import numpy as np
 
 def main():
     # disable logging 
@@ -20,6 +15,14 @@ def main():
     print("Welcome to my race strategy program.")
     year = int(input("Please input the year of the race you want to predict:\n"))
     gp_name = str(input("Please input the name of the race you want to predict:\n"))
+    
+    main_driver = str(input("Please input the abbreviation for your driver:\n")).upper()
+    teammate = str(input("Please input the abbreviation for your driver's teammate:\n")).upper()
+
+    prev_race = str(input("Did this race occur last year? (y/n)")).lower()
+    if prev_race == "y":
+        prev_main_driver = str(input("Please input the abbreviation for your main driver from the previous year's race:\n")).upper()
+        prev_teammate = str(input("Please input the abbreviation for your main driver from last year's teammate:\n")).upper()
 
     # load race weekend
     event = fastf1.get_event(year, gp_name)
@@ -39,25 +42,13 @@ def main():
     # practice info gatherer
     practice_total_info = {}
     for i in range(1, no_of_practice+1):
-        practice_total_info[f"FP{i}"] = practice_analysis([year,gp_name], i)
+        practice_total_info[f"FP{i}"] = practice_analysis([year,gp_name], i, main_driver, teammate)
     
     # previous race info gatherer
-    previous_race_info = prev_race_analysis([year,gp_name])
+    previous_race_info = prev_race_analysis([year,gp_name], prev_main_driver, prev_teammate)
 
     race_strategy_info = race_strategy_creator(practice_total_info, previous_race_info)
 
     formatter(race_strategy_info)
-
-def practice_analysis(info, practice_no):
-    practice_s = fastf1.get_session(info[0],info[1],f"FP{practice_no}")
-
-def prev_race_analysis(info):
-    race = fastf1.get_session(info[0],info[1],"R")
-
-def race_strategy_creator(previous_info, practice_info):
-    pass
-
-def formatter(info):
-    pass
 
 main()
