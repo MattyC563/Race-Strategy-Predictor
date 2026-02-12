@@ -1,6 +1,5 @@
 # imports
 import fastf1
-import logging
 
 # imports for data_analysis
 from sklearn.ensemble import RandomForestRegressor
@@ -8,9 +7,9 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 
 
-def practice_analysis(info, practice_no, main_driver, teammate, le):
+def practice_analysis(info, main_driver, teammate, le):
     # load the specific session
-    practice_s = fastf1.get_session(info[0],info[1],f"FP{practice_no}")
+    practice_s = fastf1.get_session(info[0],info[1],"FP2")
     practice_s.load()
 
     # create a column for laps since start of the stint 'LapsInStint'
