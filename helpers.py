@@ -53,3 +53,14 @@ def track_evolution(track_name):
         return -0.008
     else:
         return -0.01
+    
+def delta(prev_race_model, fp2_data, le):
+    fp2_cal_data = fp2_data[['TyreLife','Compound','TrackTemp']].copy()
+    fp2_cal_data['Compound'] = le.transform(fp2_cal_data['Compound'])
+
+    prev_prediction = prev_race_model.predict(fp2_cal_data)
+    fp2_pace = fp2_data['FuelCorrectedLapTimes'].mean()
+    pred_prev_pace = prev_prediction.mean()
+    pace_delta = fp2_pace - pred_prev_pace
+
+    return pace_delta
