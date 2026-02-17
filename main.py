@@ -1,6 +1,8 @@
 # imports from other files
 from helpers import *
 from analysis import *
+from external_factors import *
+from creator import *
 
 # imports from other libraries
 import fastf1
@@ -32,6 +34,7 @@ def main():
     if prev_race:
         prev_race_data = fastf1.get_session(year, track_name, "R")
         prev_race_data.load()
+        prev_race_pitstops = prev_race_data.copy()
         prev_race_data = cleaned_laps(prev_race_data.laps.pick_driver(prev_driver))
 
     # add necessary weather data to datasets
@@ -46,15 +49,34 @@ def main():
     if prev_race:
         prev_race_model = stint_analysis(prev_race_data, le)
 
-    print("All successful so far!\n" + str(fp2_model) + "\n" + str(prev_race_model))
+    # CALCULATE TRACK EVOLUTION
+
+    # CALCULATE AVG TEMP
+
+    # CALCULATE EXPECTED DELTA
+
+    # calibrate the previous race model for a better car
+    # DO THIS
+
+    # combine all data into one big model
+    model = ""
 
     # calculate pit loss time
+    if prev_race:
+        pit_loss_time = pit_lane_time(prev_race_pitstops, prev_driver)
 
-    # calculate rough track evolution (0.01s/lap)
+    # calculate probabilities of safety cars, vscs, red flags
+    event_probabilities = calculate_event_probabilities(track_name)
 
-    # allow the user to input guesses for possible tyre strategies, which the model can check
+    # set all strategies that the model can check
+    # 1 = medium, 2 = softs, 0 = hards
+    poss_strategies = [[2,1],[2,0],[0,1],[2,2,1],[2,2,0],[1,1,0],[1,1,2]]
+
+    # find more information for final strategy
+    total_laps = 0
 
     # use the models to roughly find the best strategy with least total time
+    # final_outcome = race_strategy_creator(model, le, total_laps, pace_delta, avg_temp, pit_loss_time, track_evo, fuel_burn=0.035)
 
     # output strategy cleanly
 
