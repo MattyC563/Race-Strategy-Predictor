@@ -1,10 +1,8 @@
-# function imports
+# imports from other files
+from helpers import *
 from analysis import *
-from creator import *
-from formatter import *
-from calibration import *
 
-# imports for clean_data
+# imports from other libraries
 import fastf1
 import logging
 
@@ -15,37 +13,50 @@ def main():
     # basic information gathering
     print("Welcome to my race strategy program.")
     year = int(input("Please input the year of the race you want to predict:\n"))
-    gp_name = str(input("Please input the name of the race you want to predict:\n"))
-    
+    track_name = str(input("Please input the name of the circuit you are racing at:\n"))
     main_driver = str(input("Please input the abbreviation for your driver:\n")).upper()
-    teammate = str(input("Please input the abbreviation for your driver's teammate:\n")).upper()
 
-    prev_race = str(input("Did this race occur last year? (y/n)")).lower()
-    if prev_race == "y":
-        prev_main_driver = str(input("Please input the abbreviation for your main driver from the previous year's race:\n")).upper()
-        prev_teammate = str(input("Please input the abbreviation for your main driver from last year's teammate:\n")).upper()
+    # identify whether the race occurred last year
+    if last_year_race(track_name, year-1):
+        prev_driver = str(input("Input the abbreviation of the driver who drove for you last year:\n")).upper()
+        prev_race = True
+    else:
+        prev_race = False
 
-    # load race weekend
-    event = fastf1.get_event(year, gp_name)
+    # load the race weekends for fp2 and last year's race, and cleans them
+    # cleans laps by removing outlaps, inlaps, laps with events along with adjusting for fuel consumption
+    fp2_data = fastf1.get_session(year, track_name, "FP2")
+    fp2_data.load()
+    fp2_data = cleaned_laps(fp2_data.laps.pick_driver(main_driver))
 
-    # le preparation
-    le = le_preperation()
-    
-    # practice info gatherer
-    practice_2_model = practice_analysis([year,gp_name], main_driver, teammate, le)
-    
-    # previous race info gatherer
-    previous_race_model = prev_race_analysis([year,gp_name], prev_main_driver, prev_teammate, le)
+    if prev_race:
+        prev_race_data = fastf1.get_session(year, track_name, "R")
+        prev_race_data.load()
+        prev_race_data = cleaned_laps(prev_race_data.laps.pick_driver(prev_driver))
 
-    # calibrate last years race data to match the current car
-    calibrated_stints = calibration([year, gp_name], main_driver)
-    pace_delta = calculate_calibration(practice_2_model, calibrated_stints,le)
+    # add necessary weather data to datasets
+    fp2_data = add_temp(fp2_data)
+    prev_race_data = add_temp(prev_race_data)
 
-    # average temperature calculator
-    avg_temp = previous_race_model['avg_track_temp']
+    # prepare the LabelEncoder for model making
+    le = le_preparation()
 
-    race_strategy_info = race_strategy_creator(previous_race_model, le, event.get_race().total_laps, pace_delta,avg_temp)
+    # make the models for fp2 and previous race
+    fp2_model = stint_analysis(fp2_data, le)
+    if prev_race:
+        prev_race_model = stint_analysis(prev_race_data, le)
 
-    formatter(race_strategy_info)
+    print("All successful so far!\n" + str(fp2_model) + "\n" + str(prev_race_model))
 
+    # calculate pit loss time
+
+    # calculate rough track evolution (0.01s/lap)
+
+    # allow the user to input guesses for possible tyre strategies, which the model can check
+
+    # use the models to roughly find the best strategy with least total time
+
+    # output strategy cleanly
+
+    # create a graph to show all the different strategies using matplotlib
 main()
