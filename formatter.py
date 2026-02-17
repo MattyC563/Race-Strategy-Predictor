@@ -1,2 +1,0 @@
-def formatter(info):
-    pass
