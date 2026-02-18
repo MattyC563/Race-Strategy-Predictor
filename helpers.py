@@ -14,6 +14,9 @@ def cleaned_laps(laps_data, track):
     # remove in and out laps from pitstops
     clean_laps = laps_data.pick_wo_box()
 
+    # remove any laps not in the dry
+    clean_laps = clean_laps[clean_laps['Compound'].isin(['SOFT','MEDIUM','HARD'])]
+
     # keep laps which were under clear track conditions
     clean_laps = clean_laps.pick_track_status("1")
 
@@ -28,7 +31,7 @@ def cleaned_laps(laps_data, track):
     clean_laps["LapTimeSeconds"] = clean_laps['LapTime'].dt.total_seconds()
 
     fuel_correction = fuel_penalty_per_lap * clean_laps['LapNumber']
-    evo_correction = track_evo_per_lap * clean_laps['Number']
+    evo_correction = track_evo_per_lap * clean_laps['LapNumber']
 
     # add fuel penalty
     clean_laps["FuelCorrectedLapTimes"] = clean_laps["LapTimeSeconds"] + fuel_correction + evo_correction
@@ -54,11 +57,13 @@ def track_evolution(track_name):
     else:
         return -0.01
     
-def delta(prev_race_model, fp2_data, le):
+def delta(prev_race_model, fp2_data, tyre_to_num):
     fp2_cal_data = fp2_data[['TyreLife','Compound','TrackTemp']].copy()
-    fp2_cal_data['Compound'] = le.transform(fp2_cal_data['Compound'])
+    
+    fp2_cal_data['Compound'] = fp2_cal_data['Compound'].map(tyre_to_num)
 
-    prev_prediction = prev_race_model.predict(fp2_cal_data)
+    prev_model = prev_race_model['model']
+    prev_prediction = prev_model.predict(fp2_cal_data)
     fp2_pace = fp2_data['FuelCorrectedLapTimes'].mean()
     pred_prev_pace = prev_prediction.mean()
     pace_delta = fp2_pace - pred_prev_pace

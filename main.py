@@ -25,29 +25,40 @@ def main():
     else:
         prev_race = False
 
+    #  Hardcoding tyre mapping to not allow wet running to change model
+    tyre_to_num = {
+        'HARD': 0,
+        'MEDIUM': 1,
+        'SOFT': 2
+    }
+
+    num_to_tyre = {
+        0: 'HARD',
+        1: 'MEDIUM',
+        2: 'SOFT'
+    }
+
     # load the race weekends for fp2 and last year's race, and cleans them
     # cleans laps by removing outlaps, inlaps, laps with events along with adjusting for fuel consumption
     fp2_data = fastf1.get_session(year, track_name, "FP2")
     fp2_data.load()
-    fp2_data = cleaned_laps(fp2_data.laps.pick_driver(main_driver))
+    fp2_data = cleaned_laps(fp2_data.laps.pick_driver(main_driver), track_name)
 
     if prev_race:
-        prev_race_data = fastf1.get_session(year-1, track_name, "R")
-        prev_race_data.load()
-        prev_race_pitstops = prev_race_data.copy()
-        prev_race_data = cleaned_laps(prev_race_data.laps.pick_driver(prev_driver))
+        prev_race_session = fastf1.get_session(year-1, track_name, "R")
+        prev_race_session.load()
+        
+        # 2. Extract ONLY the driver's laps and clean them into a pandas DataFrame
+        prev_race_data = cleaned_laps(prev_race_session.laps.pick_driver(prev_driver), track_name)
 
     # add necessary weather data to datasets
     fp2_data = add_temp(fp2_data)
     prev_race_data = add_temp(prev_race_data)
 
-    # prepare the LabelEncoder for model making
-    le = le_preparation()
-
     # make the models for fp2 and previous race
-    fp2_model = stint_analysis(fp2_data, le)
+    fp2_model = stint_analysis(fp2_data, tyre_to_num)
     if prev_race:
-        prev_race_model = stint_analysis(prev_race_data, le)
+        prev_race_model = stint_analysis(prev_race_data, tyre_to_num)
 
     # CALCULATE TRACK EVOLUTION
     track_evo = track_evolution(track_name)
@@ -55,15 +66,17 @@ def main():
     # CALCULATE AVG TEMP & EXPECTED DELTA
     if prev_race:
         avg_temp = prev_race_data['TrackTemp'].mean()
-        pace_delta = delta(prev_race_model, fp2_data, le)
+        pace_delta = delta(prev_race_model, fp2_data, tyre_to_num)
     else:
         avg_temp = fp2_data['TrackTemp'].mean()
         pace_delta = 0
 
     # calculate pit loss time and total_laps
     if prev_race:
-        pit_loss_time = pit_lane_time(prev_race_pitstops, prev_driver)
-        total_laps = prev_race_data.total_laps
+        pit_loss_time = pit_lane_time(prev_race_session, prev_driver)
+        total_laps = prev_race_session.total_laps
+        if pd.isna(pit_loss_time) or pit_loss_time == 0:
+            pit_loss_time = 24
     else:
         pit_loss_time = 25
         total_laps = int(input("What are the total laps for this race?"))
@@ -73,19 +86,19 @@ def main():
 
     # set all strategies that the model can check
     # 1 = medium, 2 = softs, 0 = hards
-    poss_strategies = [[2,1],[2,0],[0,1],[2,2,1],[2,2,0],[1,1,0],[1,1,2]]
+    poss_strategies = [[2,1], [2,0], [0,1], [1,0], [1,2], [2,2,1], [2,2,0], [1,1,0], [1,1,2]]
 
     # find more information for final strategy
     fuel_burn = 0.035
 
     # use the models to roughly find the best strategy with least total time
     if prev_race:
-        final_outcome = race_strategy_creator(prev_race_model, le, total_laps, avg_temp, pit_loss_time, track_evo, event_probabilities, poss_strategies, fuel_burn, pace_delta)
+        final_outcome = race_strategy_creator(prev_race_model, num_to_tyre, total_laps, avg_temp, pit_loss_time, track_evo, event_probabilities, poss_strategies, fuel_burn, pace_delta)
     else:
-        final_outcome = race_strategy_creator(fp2_model, le, total_laps, avg_temp, pit_loss_time, track_evo, event_probabilities, poss_strategies, fuel_burn, pace_delta)
+        final_outcome = race_strategy_creator(fp2_model, num_to_tyre,total_laps, avg_temp, pit_loss_time, track_evo, event_probabilities, poss_strategies, fuel_burn, pace_delta)
     
     # output strategy cleanly
-
+    print(final_outcome.iloc[0])
 
     # create a graph to show all the different strategies using matplotlib
     
