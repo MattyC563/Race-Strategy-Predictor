@@ -1,0 +1,5 @@
+fastf1==3.8.1
+sklearn==1.8.0
+pandas==3.0.0
+statistics==1.0.3.5
+logging==0.4.9.6
